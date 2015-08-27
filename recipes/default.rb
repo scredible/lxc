@@ -14,31 +14,35 @@ include_recipe 'lxc::install_dependencies'
 include_recipe 'lxc::package'
 
 # Start at 0 and increment up if found
-unless(node[:network][:interfaces][:lxcbr0])
-  max = node.network.interfaces.map do |int, info|
-    info[:routes]
-  end.flatten.compact.map do |routes|
-    if(routes[:family].to_s == 'inet')
-      val = (routes[:via] || routes[:destination])
-      next unless val.start_with?('10.0')
-      val.split('/').first.to_s.split('.')[3].to_i
-    end
-  end.flatten.compact.max
+# unless(node[:network][:interfaces][:lxcbr0])
+#   max = node.network.interfaces.map do |int, info|
+#     info[:routes]
+#   end.flatten.compact.map do |routes|
+#     if(routes[:family].to_s == 'inet')
+#       val = (routes[:via] || routes[:destination])
+#       next unless val.start_with?('10.0')
+#       val.split('/').first.to_s.split('.')[3].to_i
+#     end
+#   end.flatten.compact.max
+#
+#   node.set[:lxc][:network_device][:oct] = max ? max + 1 : 0
+#
+#   # Test for existing bridge. Use different subnet if found
+#   l_net = "10.0.#{node[:lxc][:network_device][:oct]}"
+#   #node.set[:lxc][:default_config][:lxc_addr] = "#{l_net}.1"
+#
+# end
 
-  node.set[:lxc][:network_device][:oct] = max ? max + 1 : 0
-
-  # Test for existing bridge. Use different subnet if found
-  l_net = "10.0.#{node[:lxc][:network_device][:oct]}"
-  node.set[:lxc][:default_config][:lxc_addr] = "#{l_net}.1"
-end
-
+node.set[:lxc][:default_config][:lxc_addr] = '10.0.3.1'
 lxc_net_prefix = node[:lxc][:default_config][:lxc_addr].sub(%r{\.1$}, '')
 
-Chef::Log.debug "Lxc net prefix: #{lxc_net_prefix}"
+Chef::Log.info "Lxc net prefix: #{lxc_net_prefix}"
 
 node.default[:lxc][:default_config][:lxc_network] = "#{lxc_net_prefix}.0/24"
 node.default[:lxc][:default_config][:lxc_dhcp_range] = "#{lxc_net_prefix}.2,#{lxc_net_prefix}.254"
 node.default[:lxc][:default_config][:lxc_dhcp_max] = '150'
+
+log node['lxc']['default_config']
 
 file '/usr/local/bin/lxc-awesome-ephemeral' do
   action :delete
