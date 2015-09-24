@@ -1,10 +1,12 @@
 
 service 'cgconfig' do
   action [:enable, :start]
+  not_if { node.platform_version.to_f >= 7.0 }
 end
 
 service 'cgred' do
   action [:enable, :start]
+  not_if { node.platform_version.to_f >= 7.0 }
 end
 
 execute 'create lxcbr0' do
@@ -35,30 +37,30 @@ end
 
 # @todo this is temp! don't leave this mess
 
-file '/etc/sysconfig/iptables' do
-  content [
-    '# Chef managed to enable LXC',
-    '*filter',
-    ':INPUT ACCEPT [0:0]',
-    ':FORWARD ACCEPT [0:0]',
-    ':OUTPUT ACCEPT [0:0]',
-    '-A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT',
-    '-A INPUT -p icmp -j ACCEPT',
-    '-A INPUT -i lo -j ACCEPT',
-    '-A INPUT -m conntrack --ctstate NEW -m tcp -p tcp --dport 22 -j ACCEPT',
-    'COMMIT',
-    '',
-    '*nat',
-    ':PREROUTING ACCEPT [0:0]',
-    ':OUTPUT ACCEPT [0:0]',
-    ':POSTROUTING ACCEPT [0:0]',
-    "-A POSTROUTING -s #{node[:lxc][:default_config][:lxc_network]} ! -d #{node[:lxc][:default_config][:lxc_network]} -j MASQUERADE",
-    'COMMIT',
-    ''
-  ].join("\n")
-  mode 0644
-  notifies :restart, 'service[iptables]', :immediately
-end
+# file '/etc/sysconfig/iptables' do
+#   content [
+#     '# Chef managed to enable LXC',
+#     '*filter',
+#     ':INPUT ACCEPT [0:0]',
+#     ':FORWARD ACCEPT [0:0]',
+#     ':OUTPUT ACCEPT [0:0]',
+#     '-A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT',
+#     '-A INPUT -p icmp -j ACCEPT',
+#     '-A INPUT -i lo -j ACCEPT',
+#     '-A INPUT -m conntrack --ctstate NEW -m tcp -p tcp --dport 22 -j ACCEPT',
+#     'COMMIT',
+#     '',
+#     '*nat',
+#     ':PREROUTING ACCEPT [0:0]',
+#     ':OUTPUT ACCEPT [0:0]',
+#     ':POSTROUTING ACCEPT [0:0]',
+#     "-A POSTROUTING -s #{node[:lxc][:default_config][:lxc_network]} ! -d #{node[:lxc][:default_config][:lxc_network]} -j MASQUERADE",
+#     'COMMIT',
+#     ''
+#   ].join("\n")
+#   mode 0644
+#   notifies :restart, 'service[iptables]', :immediately
+# end
 
 service 'iptables'
 
